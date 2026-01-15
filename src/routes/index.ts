@@ -4,8 +4,12 @@ import { getNews } from "../lib/get-news";
 import { generateScripts } from "../lib/generate-script";
 import { generateAudio } from "../lib/generate-audio";
 
+import discussionRoutes from "./discussions";
+import audioMetaRoutes from "./audio";
+
 const router = Router();
 
+/* ---------- Health ---------- */
 router.get("/health", (_req: Request, res: Response) => {
   res.json({
     success: true,
@@ -13,6 +17,7 @@ router.get("/health", (_req: Request, res: Response) => {
   });
 });
 
+/* ---------- News + Script ---------- */
 router.get("/get-news", async (req: Request, res: Response) => {
   try {
     const {
@@ -44,9 +49,10 @@ router.get("/get-news", async (req: Request, res: Response) => {
   }
 });
 
+/* ---------- TTS ---------- */
 router.post("/tts", async (req: Request, res: Response) => {
   try {
-    const { audioScript } = req.body;
+    const { audioScript, userId = "guest", newsId = "general" } = req.body;
 
     if (!audioScript) {
       return res
@@ -54,7 +60,7 @@ router.post("/tts", async (req: Request, res: Response) => {
         .json({ success: false, message: "audioScript required" });
     }
 
-    const audioUrl = await generateAudio(audioScript);
+    const audioUrl = await generateAudio(audioScript, userId, newsId);
 
     res.json({ success: true, audioUrl });
   } catch (err) {
@@ -62,5 +68,11 @@ router.post("/tts", async (req: Request, res: Response) => {
     res.status(500).json({ success: false, message: "TTS failed" });
   }
 });
+
+/* ---------- Discussion Forum ---------- */
+router.use("/discussions", discussionRoutes);
+
+/* ---------- Audio Metadata ---------- */
+router.use("/audio-meta", audioMetaRoutes);
 
 export default router;

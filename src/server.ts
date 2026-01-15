@@ -1,6 +1,12 @@
 import app from "./app";
 import { env } from "./config/env";
+import { connectDB } from "./config/db";
 
-app.listen(env.PORT, () => {
-  console.log(`🚀 Bun + Express (TS) running on port ${env.PORT}`);
-});
+async function start() {
+  await connectDB();
+  app.listen(env.PORT, () => {
+    console.log(`🚀 Server running on ${env.PORT}`);
+  });
+}
+
+start();
