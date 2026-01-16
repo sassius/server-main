@@ -14,6 +14,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.970.0",
     "@elevenlabs/elevenlabs-js": "^2.31.0",
     "@openrouter/ai-sdk-provider": "^1.5.4",
     "@perplexity-ai/perplexity_ai": "^0.18.3",
@@ -21,6 +22,7 @@
     "@types/express": "^5.0.6",
     "@types/morgan": "^1.9.10",
     "cors": "^2.8.5",
+    "crypto": "^1.0.1",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "mongoose": "^9.1.3",

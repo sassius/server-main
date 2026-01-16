@@ -4,7 +4,8 @@ const AudioSchema = new Schema(
   {
     userId: String,
     newsId: String,
-    filePath: String,
+    hash: String,      // unique from audioScript
+    audioUrl: String, // R2 public URL
   },
   { timestamps: true }
 );
