@@ -1,4 +1,4 @@
-import type { GeneratedScripts, News } from "../types";
+import type { GeneratedScripts, FactCheckedNews } from "../types";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { env } from "../config/env";
@@ -8,14 +8,39 @@ const openrouter = createOpenRouter({
 });
 
 export async function generateScripts(
-  newsList: News[]
+  newsList: FactCheckedNews[]
 ): Promise<GeneratedScripts> {
   if (!newsList.length) {
     throw new Error("No news provided");
   }
 
-  // Prepare structured input for the model
-  const combinedNews = newsList
+  const blogNews = newsList.filter(
+    (n) => n.verdict === "verified" || n.verdict === "uncertain" // speculation
+  );
+
+  const audioNews = newsList.filter((n) => n.verdict === "verified");
+
+  if (!blogNews.length) {
+    throw new Error("No news for blog");
+  }
+
+  if (!audioNews.length) {
+    throw new Error("No verified news for audio");
+  }
+
+  const blogInput = blogNews
+    .map(
+      (n, i) => `
+${i + 1}. ${n.title}
+Summary: ${n.summary}
+Source: ${n.url}
+Fact Check: ${n.verdict === "verified" ? "VERIFIED" : "SPECULATION"}
+Reason: ${n.reasoning}
+`
+    )
+    .join("\n");
+
+  const audioInput = audioNews
     .map(
       (n, i) => `
 ${i + 1}. ${n.title}
@@ -25,44 +50,42 @@ Source: ${n.url}
     )
     .join("\n");
 
-  /* -------- BLOG DIGEST -------- */
+  /* -------- BLOG (VERIFIED + SPECULATION) -------- */
   const blogResponse = await generateText({
     model: openrouter.chat(env.MODEL!),
     prompt: `
-You are a professional journalist writing a daily news digest.
+You are a professional journalist.
 
-Using the news items below:
-- Combine them into ONE coherent blog article
-- Smooth transitions between stories
-- Neutral and informative tone
+Rules:
+- Include verified and speculative news
+- Clearly label speculative parts as speculation
+- Neutral tone
 - 400–600 words
-- Clear sections per topic
-- End with a "Sources" section listing all links
+- End with Sources
 
 News:
-${combinedNews}
+${blogInput}
     `,
     temperature: 0.6,
   });
 
-  /* -------- AUDIO DIGEST (ElevenLabs) -------- */
+  /* -------- AUDIO (VERIFIED ONLY) -------- */
   const audioResponse = await generateText({
     model: openrouter.chat(env.MODEL!),
     prompt: `
-You are a news narrator creating a daily audio briefing.
+You are a news narrator.
 
-Rewrite the news below as ONE continuous spoken script.
 Rules:
-- Conversational and natural
+- Use ONLY verified news
+- Conversational tone
 - Short sentences
 - No markdown
 - No bullet points
-- Clear transitions like "In other news" or "Meanwhile"
-- Suitable for ElevenLabs text-to-speech
-- 60–90 seconds when spoken
+- Suitable for TTS
+- 60–90 seconds
 
 News:
-${combinedNews}
+${audioInput}
     `,
     temperature: 0.5,
   });

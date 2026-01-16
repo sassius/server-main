@@ -3,6 +3,7 @@ import type { Request, Response } from "express";
 import { getNews } from "../lib/get-news";
 import { generateScripts } from "../lib/generate-script";
 import { generateAudio } from "../lib/generate-audio";
+import { factCheckNews } from "../lib/fact-check";
 
 import discussionRoutes from "./discussions";
 import audioMetaRoutes from "./audio";
@@ -17,7 +18,7 @@ router.get("/health", (_req: Request, res: Response) => {
   });
 });
 
-/* ---------- News + Script ---------- */
+/* ---------- News + Fact Check + Scripts ---------- */
 router.get("/get-news", async (req: Request, res: Response) => {
   try {
     const {
@@ -33,15 +34,22 @@ router.get("/get-news", async (req: Request, res: Response) => {
       });
     }
 
+    // 1) Get raw news from Perplexity
     const results = await getNews(query, maxResults, country);
-    const scripts = await generateScripts(results);
+
+    // 2) Fact check each news item
+    const checked = await factCheckNews(results);
+
+    // 3) Generate blog + audio scripts using your rules
+    const scripts = await generateScripts(checked);
 
     res.json({
       success: true,
+      factCheckedNews: checked,
       scripts,
     });
   } catch (error) {
-    console.error("Chat API error:", error);
+    console.error("Get News API error:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",
